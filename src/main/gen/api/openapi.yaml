@@ -1,0 +1,326 @@
+openapi: 3.1.0
+info:
+  description: "Servicios REST para la gestión de triage, estudiantes, funcionarios\
+    \ e historial de solicitudes académicas."
+  title: API Sistema de Triage Académico
+  version: 1.0.0
+servers:
+- url: http://localhost:8080/api
+paths:
+  /auth/login:
+    post:
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: Token JWT generado correctamente
+      summary: Autenticación de usuario
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /solicitudes:
+    get:
+      operationId: consultarSolicitudes
+      parameters:
+      - explode: true
+        in: query
+        name: estado
+        required: false
+        schema:
+          $ref: '#/components/schemas/EstadoSolicitud'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SolicitudDTO'
+                type: array
+          description: Lista de solicitudes obtenida
+      security:
+      - bearerAuth: []
+      summary: Consultar solicitudes (Funcionario)
+      x-accepts:
+      - application/json
+    post:
+      operationId: registrarSolicitud
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearSolicitudDTO'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudDTO'
+          description: Solicitud registrada correctamente
+      security:
+      - bearerAuth: []
+      summary: Registrar nueva solicitud (Estudiante)
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /solicitudes/{id}/priorizar:
+    put:
+      operationId: asignarPrioridad
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrioridadDTO'
+        required: true
+      responses:
+        "200":
+          description: Prioridad asignada exitosamente
+      security:
+      - bearerAuth: []
+      summary: Asignar prioridad y Triage
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /solicitudes/{id}/funcionario:
+    put:
+      operationId: asignarFuncionario
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/asignarFuncionario_request'
+        required: true
+      responses:
+        "200":
+          description: Funcionario asignado correctamente
+      security:
+      - bearerAuth: []
+      summary: Asignar funcionario encargado
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /solicitudes/{id}/historial:
+    get:
+      operationId: consultarHistorial
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/HistorialDTO'
+                type: array
+          description: Historial obtenido
+      security:
+      - bearerAuth: []
+      summary: Ver historial de cambios de la solicitud
+      x-accepts:
+      - application/json
+components:
+  schemas:
+    LoginRequest:
+      example:
+        password: password
+        username: username
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+      - password
+      - username
+    LoginResponse:
+      example:
+        token: token
+      properties:
+        token:
+          type: string
+    CrearSolicitudDTO:
+      example:
+        descripcion: descripcion
+        canalOrigen: CORREO
+        estudianteId: estudianteId
+        tipoSolicitud: Homologacion
+      properties:
+        descripcion:
+          type: string
+        tipoSolicitud:
+          $ref: '#/components/schemas/TipoSolicitudEnum'
+        canalOrigen:
+          example: CORREO
+          type: string
+        estudianteId:
+          type: string
+      required:
+      - canalOrigen
+      - descripcion
+      - estudianteId
+      - tipoSolicitud
+    SolicitudDTO:
+      example:
+        descripcion: descripcion
+        estudiante:
+          correo: correo
+          programa: programa
+          id: id
+          nombre: nombre
+        estado: Registrada
+        tipoSolicitud: Homologacion
+        idSolicitud: idSolicitud
+        fechaHoraRegistro: 2000-01-23T04:56:07.000+00:00
+        funcionarioAsignado:
+          id: id
+          cargo: cargo
+          nombre: nombre
+        prioridad:
+          justificacion: justificacion
+          fechaLimite: 2000-01-23
+          nivel: ALTA
+          impacto: impacto
+      properties:
+        idSolicitud:
+          type: string
+        descripcion:
+          type: string
+        fechaHoraRegistro:
+          format: date-time
+          type: string
+        estado:
+          $ref: '#/components/schemas/EstadoSolicitud'
+        estudiante:
+          $ref: '#/components/schemas/EstudianteDTO'
+        funcionarioAsignado:
+          $ref: '#/components/schemas/FuncionarioDTO'
+        prioridad:
+          $ref: '#/components/schemas/PrioridadDTO'
+        tipoSolicitud:
+          $ref: '#/components/schemas/TipoSolicitudEnum'
+    PrioridadDTO:
+      example:
+        justificacion: justificacion
+        fechaLimite: 2000-01-23
+        nivel: ALTA
+        impacto: impacto
+      properties:
+        nivel:
+          enum:
+          - ALTA
+          - MEDIA
+          - BAJA
+          type: string
+        impacto:
+          type: string
+        justificacion:
+          type: string
+        fechaLimite:
+          format: date
+          type: string
+    EstudianteDTO:
+      example:
+        correo: correo
+        programa: programa
+        id: id
+        nombre: nombre
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        correo:
+          type: string
+        programa:
+          type: string
+    FuncionarioDTO:
+      example:
+        id: id
+        cargo: cargo
+        nombre: nombre
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        cargo:
+          type: string
+    HistorialDTO:
+      example:
+        accion: accion
+        fechaHora: 2000-01-23T04:56:07.000+00:00
+        observaciones: observaciones
+        funcionarioResponsable:
+          id: id
+          cargo: cargo
+          nombre: nombre
+        idHistorial: idHistorial
+      properties:
+        idHistorial:
+          type: string
+        fechaHora:
+          format: date-time
+          type: string
+        accion:
+          type: string
+        observaciones:
+          type: string
+        funcionarioResponsable:
+          $ref: '#/components/schemas/FuncionarioDTO'
+    TipoSolicitudEnum:
+      enum:
+      - Homologacion
+      - Cancelacion
+      - Cupos
+      - Consulta
+      type: string
+    EstadoSolicitud:
+      enum:
+      - Registrada
+      - Clasificada
+      - EnAtencion
+      - Atendida
+      - Cerrada
+      type: string
+    asignarFuncionario_request:
+      properties:
+        funcionarioId:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+
