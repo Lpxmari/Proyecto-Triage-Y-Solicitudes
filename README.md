@@ -38,4 +38,4 @@ Se ha elaborado el contrato de comunicación en formato YAML. Este documento def
 
 Diagrama de Dominio
 
-![img.png](img.png)
+![img_1.png](img_1.png)

@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: API Sistema de Triage Académico
   version: 1.0.0
-  description: Servicios REST para la gestión de triage, estudiantes, funcionarios e historial de solicitudes académicas.
+  description: Servicios REST para la gestión de triage, estudiantes, responsables e historial de solicitudes académicas.
 
 servers:
   - url: http://localhost:8080/api
@@ -20,11 +20,11 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Token JWT generado correctamente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginResponse'
+          description: Token JWT generado correctamente.
+        '401':
+          description: Unauthorized. Credenciales incorrectas.
+        '403':
+          description: Forbidden. Usuario inactivo.
 
   /solicitudes:
     post:
@@ -40,14 +40,10 @@ paths:
               $ref: '#/components/schemas/CrearSolicitudDTO'
       responses:
         '201':
-          description: Solicitud registrada correctamente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SolicitudDTO'
+          description: Solicitud registrada.
 
     get:
-      summary: Consultar solicitudes (Funcionario)
+      summary: Consultar solicitudes (Responsable)
       operationId: consultarSolicitudes
       security:
         - bearerAuth: []
@@ -58,13 +54,7 @@ paths:
             $ref: '#/components/schemas/EstadoSolicitud'
       responses:
         '200':
-          description: Lista de solicitudes obtenida
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SolicitudDTO'
+          description: Lista de solicitudes obtenida.
 
   /solicitudes/{id}/priorizar:
     put:
@@ -86,12 +76,12 @@ paths:
               $ref: '#/components/schemas/PrioridadDTO'
       responses:
         '200':
-          description: Prioridad asignada exitosamente
+          description: Prioridad asignada exitosamente.
 
-  /solicitudes/{id}/funcionario:
+  /solicitudes/{id}/responsable:
     put:
-      summary: Asignar funcionario encargado
-      operationId: asignarFuncionario
+      summary: Asignar responsable encargado
+      operationId: asignarResponsable
       security:
         - bearerAuth: []
       parameters:
@@ -106,11 +96,11 @@ paths:
           application/json:
             schema:
               properties:
-                funcionarioId:
+                responsableId:
                   type: string
       responses:
         '200':
-          description: Funcionario asignado correctamente
+          description: Responsable asignado correctamente.
 
   /solicitudes/{id}/historial:
     get:
@@ -126,13 +116,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Historial obtenido
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/HistorialDTO'
+          description: Historial obtenido.
 
 components:
   securitySchemes:
@@ -160,52 +144,54 @@ components:
       properties:
         descripcion: { type: string }
         tipoSolicitud: { $ref: '#/components/schemas/TipoSolicitudEnum' }
-        canalOrigen: { type: string, example: "CORREO" }
+        canalOrigen: { type: string }
         estudianteId: { type: string }
 
     SolicitudDTO:
       type: object
       properties:
-        idSolicitud: { type: string }
+        id: { type: string }
         descripcion: { type: string }
         fechaHoraRegistro: { type: string, format: date-time }
+        fechaCierre: { type: string, format: date-time, nullable: true }
         estado: { $ref: '#/components/schemas/EstadoSolicitud' }
         estudiante: { $ref: '#/components/schemas/EstudianteDTO' }
-        funcionarioAsignado: { $ref: '#/components/schemas/FuncionarioDTO' }
+        responsableAsignado: { $ref: '#/components/schemas/ResponsableDTO' }
         prioridad: { $ref: '#/components/schemas/PrioridadDTO' }
-        tipoSolicitud: { $ref: '#/components/schemas/TipoSolicitudEnum' }
 
     PrioridadDTO:
       type: object
       properties:
         nivel: { type: string, enum: [ALTA, MEDIA, BAJA] }
-        impacto: { type: string }
+        impactoAcademico: { type: string }
         justificacion: { type: string }
-        fechaLimite: { type: string, format: date }
+        vigencia: { type: string, format: date }
 
     EstudianteDTO:
       type: object
       properties:
         id: { type: string }
-        nombre: { type: string }
+        nombreCompleto: { type: string }
         correo: { type: string }
         programa: { type: string }
 
-    FuncionarioDTO:
+    ResponsableDTO:
       type: object
       properties:
         id: { type: string }
-        nombre: { type: string }
+        nombreCompleto: { type: string }
         cargo: { type: string }
+        activo: { type: boolean }
 
     HistorialDTO:
       type: object
       properties:
         idHistorial: { type: string }
         fechaHora: { type: string, format: date-time }
-        accion: { type: string }
+        estadoAnterior: { $ref: '#/components/schemas/EstadoSolicitud' }
+        estadoNuevo: { $ref: '#/components/schemas/EstadoSolicitud' }
         observaciones: { type: string }
-        funcionarioResponsable: { $ref: '#/components/schemas/FuncionarioDTO' }
+        responsableAccion: { $ref: '#/components/schemas/ResponsableDTO' }
 
     TipoSolicitudEnum:
       type: string
